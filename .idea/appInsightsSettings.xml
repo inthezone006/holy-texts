@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.rahul.holytexts" />
+                  <option name="mobileSdkAppId" value="1:984091453345:android:306b894cb50b2014facde0" />
+                  <option name="projectId" value="holy-texts" />
+                  <option name="projectNumber" value="984091453345" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
