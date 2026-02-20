@@ -1,5 +1,6 @@
 package com.rahul.holytexts.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -20,9 +21,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rahul.holytexts.data.LastReadInfo
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    lastReadInfo: LastReadInfo?,
+    onContinueReading: (String) -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -33,7 +38,7 @@ fun HomeScreen() {
                 .padding(16.dp)
         ) {
             Text(
-                text = "Holy Texts",
+                text = "Welcome to Holy Texts",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -49,11 +54,15 @@ fun HomeScreen() {
                 item(span = { GridItemSpan(2) }) {
                     BentoItem(
                         title = "Continue Reading",
-                        subtitle = "The Bhagavad Gita - Chapter 2",
+                        subtitle = if (lastReadInfo != null) "${lastReadInfo.bookName} - ${lastReadInfo.chapterName}" else "Start your journey",
                         icon = Icons.AutoMirrored.Filled.MenuBook,
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.height(160.dp)
+                        modifier = Modifier
+                            .height(160.dp)
+                            .clickable { 
+                                lastReadInfo?.route?.let { onContinueReading(it) }
+                            }
                     )
                 }
                 item {

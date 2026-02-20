@@ -23,7 +23,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.rahul.holytexts.data.ThemePreferences
+import com.rahul.holytexts.data.AppPreferences
+import com.rahul.holytexts.data.LastReadInfo
 import com.rahul.holytexts.ui.theme.HolyTextsTheme
 import kotlinx.coroutines.launch
 
@@ -45,14 +46,22 @@ sealed class AccountNav(val route: String) {
     object Settings : AccountNav("settings")
 }
 
+sealed class BibleNav(val route: String) {
+    object BibleView : BibleNav("bible_view?book={book}&chapter={chapter}") {
+        fun createRoute(book: String?, chapter: String?) = 
+            "bible_view?book=${Uri.encode(book ?: "Genesis")}&chapter=${Uri.encode(chapter ?: "1")}"
+    }
+}
+
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val themePreferences = remember { ThemePreferences(context) }
+    val appPreferences = remember { AppPreferences(context) }
     val scope = rememberCoroutineScope()
     
-    val savedDarkMode by themePreferences.isDarkMode.collectAsState(initial = null)
+    val savedDarkMode by appPreferences.isDarkMode.collectAsState(initial = null)
+    val lastReadInfo by appPreferences.lastReadInfo.collectAsState(initial = null)
     val systemDarkMode = isSystemInDarkTheme()
     val isDarkMode = savedDarkMode ?: systemDarkMode
     
@@ -68,25 +77,33 @@ fun MainScreen() {
                 NavigationBar {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentDestination = navBackStackEntry?.destination
+                    
                     items.forEach { screen ->
+                        val isSelected = currentDestination?.hierarchy?.any { 
+                            it.route == screen.route || 
+                            (screen == Screen.Home && it.route?.startsWith("bible_view") == true)
+                        } == true
+                        
                         NavigationBarItem(
                             icon = {
                                 Icon(
-                                    if (currentDestination?.hierarchy?.any { it.route?.startsWith(screen.route) == true } == true)
-                                        screen.selectedIcon
-                                    else screen.unselectedIcon,
+                                    imageVector = if (isSelected) screen.selectedIcon else screen.unselectedIcon,
                                     contentDescription = screen.label
                                 )
                             },
                             label = { Text(screen.label) },
-                            selected = currentDestination?.hierarchy?.any { it.route?.startsWith(screen.route) == true } == true,
+                            selected = isSelected,
                             onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (screen == Screen.Home && currentDestination?.route?.startsWith("bible_view") == true) {
+                                    navController.popBackStack(Screen.Home.route, false)
+                                } else {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             }
                         )
@@ -95,15 +112,49 @@ fun MainScreen() {
             }
         ) { innerPadding ->
             NavHost(navController, startDestination = Screen.Home.route, Modifier.padding(innerPadding)) {
-                composable(Screen.Home.route) { HomeScreen() }
-                composable(Screen.Library.route) { LibraryScreen() }
+                composable(Screen.Home.route) { 
+                    HomeScreen(
+                        lastReadInfo = lastReadInfo,
+                        onContinueReading = { route -> 
+                            navController.navigate(route) {
+                                launchSingleTop = true
+                            }
+                        }
+                    ) 
+                }
+                
+                composable(Screen.Library.route) { 
+                    LibraryScreen(
+                        onNavigateToBible = { 
+                            navController.navigate(BibleNav.BibleView.createRoute("Genesis", "1")) 
+                        }
+                    ) 
+                }
+
+                composable(
+                    route = BibleNav.BibleView.route,
+                    arguments = listOf(
+                        navArgument("book") { defaultValue = "Genesis" },
+                        navArgument("chapter") { defaultValue = "1" }
+                    )
+                ) {
+                    BibleScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onUpdateLastRead = { book, chapter, _ ->
+                            scope.launch {
+                                val route = BibleNav.BibleView.createRoute(book, chapter.split(" ").last())
+                                appPreferences.saveLastRead(LastReadInfo(book, chapter, route))
+                            }
+                        }
+                    )
+                }
                 
                 composable(Screen.AccountTab.route) {
                     AccountScreen(
                         isDarkMode = isDarkMode,
                         onThemeChange = { newValue ->
                             scope.launch {
-                                themePreferences.saveTheme(newValue)
+                                appPreferences.saveTheme(newValue)
                             }
                         },
                         onNavigateToSignIn = { navController.navigate(AccountNav.SignIn.route) },

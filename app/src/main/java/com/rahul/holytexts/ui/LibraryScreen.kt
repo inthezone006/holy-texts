@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun LibraryScreen() {
+fun LibraryScreen(onNavigateToBible: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -43,6 +43,7 @@ fun LibraryScreen() {
                     icon = Icons.Default.Book,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    onClick = onNavigateToBible,
                     modifier = Modifier.height(180.dp)
                 )
             }
@@ -53,6 +54,7 @@ fun LibraryScreen() {
                     icon = Icons.Default.Book,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = { /* TODO */ },
                     modifier = Modifier.height(180.dp)
                 )
             }
@@ -63,6 +65,7 @@ fun LibraryScreen() {
                     icon = Icons.Default.Book,
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    onClick = { /* TODO */ },
                     modifier = Modifier.height(180.dp)
                 )
             }
@@ -73,6 +76,7 @@ fun LibraryScreen() {
                     icon = Icons.Default.Book,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = { /* TODO */ },
                     modifier = Modifier.height(180.dp)
                 )
             }
@@ -83,6 +87,7 @@ fun LibraryScreen() {
                     icon = Icons.Default.Book,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    onClick = { /* TODO */ },
                     modifier = Modifier.height(180.dp)
                 )
             }
@@ -93,6 +98,7 @@ fun LibraryScreen() {
                     icon = Icons.Default.Book,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = { /* TODO */ },
                     modifier = Modifier.height(180.dp)
                 )
             }
@@ -107,9 +113,11 @@ fun LibraryBentoItem(
     icon: ImageVector,
     containerColor: Color,
     contentColor: Color,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
