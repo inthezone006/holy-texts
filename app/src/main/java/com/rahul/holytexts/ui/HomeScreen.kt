@@ -38,7 +38,7 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Welcome to Holy Texts",
+                text = "Holy Texts",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
