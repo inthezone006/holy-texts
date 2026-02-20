@@ -6,5 +6,5 @@
         <item name="postSplashScreenTheme">@style/Theme.HolyTexts</item>
     </style>
 
-    <style name="Theme.HolyTexts" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.HolyTexts" parent="android:Theme.Material.NoActionBar" />
 </resources>

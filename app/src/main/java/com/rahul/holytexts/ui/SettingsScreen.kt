@@ -22,7 +22,8 @@ fun SettingsScreen(onBackClick: () -> Unit) {
                             contentDescription = "Back"
                         )
                     }
-                }
+                },
+                windowInsets = WindowInsets(0, 0, 0, 0) // Standard Android push to top
             )
         }
     ) { innerPadding ->
