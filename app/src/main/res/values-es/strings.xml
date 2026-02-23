@@ -1,0 +1,106 @@
+<resources>
+    <string name="app_name">Holy Texts</string>
+
+    <!-- Home Screen -->
+    <string name="welcome_title">Bienvenido a Holy Texts</string>
+    <string name="continue_reading">Continuar leyendo</string>
+    <string name="start_journey">Comienza tu viaje</string>
+    <string name="daily_verse">Versículo diario</string>
+    <string name="verse_of_day">Versículo del día</string>
+    <string name="search">Buscar</string>
+    <string name="find_texts">Buscar textos</string>
+    <string name="bookmarks">Marcadores</string>
+    <string name="saved">Guardado</string>
+    <string name="recent_history">Historial reciente</string>
+    <string name="view_last_readings">Ver tus últimas 5 lecturas</string>
+
+    <!-- Library Screen -->
+    <string name="library_title">Biblioteca</string>
+    <string name="bible">Biblia</string>
+    <string name="holy_bible">La Santa Biblia</string>
+    <string name="quran">Corán</string>
+    <string name="holy_quran">El Santo Corán</string>
+    <string name="bhagavad_gita">Bhagavad Gita</string>
+    <string name="song_of_god">El Canto del Señor</string>
+    <string name="torah">Torá</string>
+    <string name="five_books">Los Cinco Libros</string>
+    <string name="guru_granth_sahib">Gurú Granth Sahib</string>
+    <string name="living_guru">El Gurú Viviente</string>
+    <string name="dhammapada">Dhammapada</string>
+    <string name="path_of_wisdom">Camino de la Sabiduría</string>
+
+    <!-- Account Screen -->
+    <string name="account_title">Cuenta</string>
+    <string name="sign_in">Iniciar sesión</string>
+    <string name="welcome_back">Bienvenido de nuevo</string>
+    <string name="sign_up">Registrarse</string>
+    <string name="join_us">Únete a nosotros</string>
+    <string name="active_profile">Perfil activo</string>
+    <string name="dark_mode">Modo oscuro</string>
+    <string name="settings">Ajustes</string>
+    <string name="app_preferences">Preferencias de la aplicación</string>
+    <string name="sign_out">Cerrar sesión</string>
+    <string name="profile">Perfil</string>
+
+    <!-- Auth Screens -->
+    <string name="email">Correo electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="full_name">Nombre completo</string>
+    <string name="continue_btn">Continuar</string>
+    <string name="or_divider">O</string>
+    <string name="sign_in_google">Iniciar sesión con Google</string>
+    <string name="sign_up_google">Registrarse con Google</string>
+
+    <!-- Password Creation -->
+    <string name="set_password">Establecer contraseña</string>
+    <string name="secure_account">Asegura tu cuenta</string>
+    <string name="create_password_for">Crea una contraseña para %1$s</string>
+    <string name="confirm_password">Confirmar contraseña</string>
+    <string name="complete_sign_up">Completar registro</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Ajustes</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="manage_alerts">Gestionar alertas</string>
+    <string name="daily_verses_enabled">Versículos diarios activados</string>
+    <string name="daily_verses_disabled">Versículos diarios desactivados</string>
+    <string name="app_language">Idioma de la aplicación</string>
+    <string name="verse_version">Versión del versículo</string>
+    <string name="verse_source">Fuente del versículo diario</string>
+    <string name="prefer_verses_from">Preferir versículos de %1$s</string>
+    <string name="help">Ayuda</string>
+    <string name="support">Soporte</string>
+    <string name="about">Acerca de</string>
+
+    <!-- Bible Reader -->
+    <string name="books">Libros</string>
+    <string name="reader_settings">Ajustes del lector</string>
+    <string name="font_size">Tamaño de fuente: %1$d</string>
+    <string name="line_spacing">Espaciado de línea: %1$.1f</string>
+    <string name="font_family">Familia de fuentes</string>
+    <string name="theme">Tema</string>
+    <string name="bible_version">Versión de la Biblia</string>
+    <string name="highlight_verse">Resaltar versículo</string>
+    <string name="remove_highlight">Quitar resaltado</string>
+    <string name="bookmark_verse">Marcar versículo</string>
+    <string name="remove_bookmark">Quitar marcador</string>
+    <string name="share_verse">Compartir versículo</string>
+
+    <!-- Profile Settings -->
+    <string name="profile_settings">Ajustes del perfil</string>
+    <string name="change_password">Cambiar contraseña</string>
+    <string name="update_security">Actualiza tu seguridad</string>
+    <string name="delete_account">Eliminar cuenta</string>
+    <string name="remove_data">Eliminar tus datos permanentemente</string>
+    <string name="delete_confirm_title">¿Eliminar cuenta?</string>
+    <string name="delete_confirm_msg">Esta acción es permanente y eliminará todos tus marcadores, notas y resaltados guardados. ¿Estás seguro de que deseas continuar?</string>
+    <string name="delete_btn">Eliminar</string>
+    <string name="cancel_btn">Cancelar</string>
+    <string name="current_password">Contraseña actual</string>
+    <string name="new_password">Nueva contraseña</string>
+    <string name="confirm_new_password">Confirmar nueva contraseña</string>
+
+    <!-- Bookmarks -->
+    <string name="my_bookmarks">Mis marcadores</string>
+    <string name="no_bookmarks">Aún no hay marcadores</string>
+</resources>

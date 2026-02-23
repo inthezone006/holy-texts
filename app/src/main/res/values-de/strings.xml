@@ -1,0 +1,106 @@
+<resources>
+    <string name="app_name">Holy Texts</string>
+
+    <!-- Home Screen -->
+    <string name="welcome_title">Willkommen bei Holy Texts</string>
+    <string name="continue_reading">Weiterlesen</string>
+    <string name="start_journey">Beginne deine Reise</string>
+    <string name="daily_verse">Täglicher Vers</string>
+    <string name="verse_of_day">Vers des Tages</string>
+    <string name="search">Suche</string>
+    <string name="find_texts">Texte finden</string>
+    <string name="bookmarks">Lesezeichen</string>
+    <string name="saved">Gespeichert</string>
+    <string name="recent_history">Letzte Aktivitäten</string>
+    <string name="view_last_readings">Deine letzten 5 Lesungen ansehen</string>
+
+    <!-- Library Screen -->
+    <string name="library_title">Bibliothek</string>
+    <string name="bible">Bibel</string>
+    <string name="holy_bible">Die Heilige Bibel</string>
+    <string name="quran">Koran</string>
+    <string name="holy_quran">Der Heilige Koran</string>
+    <string name="bhagavad_gita">Bhagavad Gita</string>
+    <string name="song_of_god">Der Gesang Gottes</string>
+    <string name="torah">Tora</string>
+    <string name="five_books">Die fünf Bücher</string>
+    <string name="guru_granth_sahib">Guru Granth Sahib</string>
+    <string name="living_guru">Der lebende Guru</string>
+    <string name="dhammapada">Dhammapada</string>
+    <string name="path_of_wisdom">Pfad der Weisheit</string>
+
+    <!-- Account Screen -->
+    <string name="account_title">Konto</string>
+    <string name="sign_in">Anmelden</string>
+    <string name="welcome_back">Willkommen zurück</string>
+    <string name="sign_up">Registrieren</string>
+    <string name="join_us">Mach mit</string>
+    <string name="active_profile">Aktives Profil</string>
+    <string name="dark_mode">Dunkelmodus</string>
+    <string name="settings">Einstellungen</string>
+    <string name="app_preferences">App-Einstellungen</string>
+    <string name="sign_out">Abmelden</string>
+    <string name="profile">Profil</string>
+
+    <!-- Auth Screens -->
+    <string name="email">E-Mail</string>
+    <string name="password">Passwort</string>
+    <string name="full_name">Vollständiger Name</string>
+    <string name="continue_btn">Weiter</string>
+    <string name="or_divider">ODER</string>
+    <string name="sign_in_google">Mit Google anmelden</string>
+    <string name="sign_up_google">Mit Google registrieren</string>
+
+    <!-- Password Creation -->
+    <string name="set_password">Passwort festlegen</string>
+    <string name="secure_account">Sichere dein Konto</string>
+    <string name="create_password_for">Passwort erstellen für %1$s</string>
+    <string name="confirm_password">Passwort bestätigen</string>
+    <string name="complete_sign_up">Registrierung abschließen</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="notifications">Benachrichtigungen</string>
+    <string name="manage_alerts">App-Benachrichtigungen verwalten</string>
+    <string name="daily_verses_enabled">Tägliche Verse aktiviert</string>
+    <string name="daily_verses_disabled">Tägliche Verse deaktiviert</string>
+    <string name="app_language">App-Sprache</string>
+    <string name="verse_version">Vers-Version</string>
+    <string name="verse_source">Täglicher Vers Quelle</string>
+    <string name="prefer_verses_from">Verse bevorzugen aus %1$s</string>
+    <string name="help">Hilfe</string>
+    <string name="support">Support</string>
+    <string name="about">Über</string>
+
+    <!-- Bible Reader -->
+    <string name="books">Bücher</string>
+    <string name="reader_settings">Lese-Einstellungen</string>
+    <string name="font_size">Schriftgröße: %1$d</string>
+    <string name="line_spacing">Zeilenabstand: %1$.1f</string>
+    <string name="font_family">Schriftfamilie</string>
+    <string name="theme">Thema</string>
+    <string name="bible_version">Bibelversion</string>
+    <string name="highlight_verse">Vers hervorheben</string>
+    <string name="remove_highlight">Hervorhebung entfernen</string>
+    <string name="bookmark_verse">Lesezeichen setzen</string>
+    <string name="remove_bookmark">Lesezeichen entfernen</string>
+    <string name="share_verse">Vers teilen</string>
+
+    <!-- Profile Settings -->
+    <string name="profile_settings">Profileinstellungen</string>
+    <string name="change_password">Passwort ändern</string>
+    <string name="update_security">Sicherheit aktualisieren</string>
+    <string name="delete_account">Konto löschen</string>
+    <string name="remove_data">Deine Daten dauerhaft entfernen</string>
+    <string name="delete_confirm_title">Konto löschen?</string>
+    <string name="delete_confirm_msg">Diese Aktion ist dauerhaft und löscht alle deine gespeicherten Lesezeichen, Notizen und Hervorhebungen. Bist du sicher, dass du fortfahren möchtest?</string>
+    <string name="delete_btn">Löschen</string>
+    <string name="cancel_btn">Abbrechen</string>
+    <string name="current_password">Aktuelles Passwort</string>
+    <string name="new_password">Neues Passwort</string>
+    <string name="confirm_new_password">Neues Passwort bestätigen</string>
+
+    <!-- Bookmarks -->
+    <string name="my_bookmarks">Meine Lesezeichen</string>
+    <string name="no_bookmarks">Noch keine Lesezeichen</string>
+</resources>

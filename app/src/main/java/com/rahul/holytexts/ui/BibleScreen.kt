@@ -23,11 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,7 +43,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun BibleScreen(
     onBackClick: () -> Unit,
-    onUpdateLastRead: (String, String, String) -> Unit,
+    onUpdateLastRead: (String, String, String, String) -> Unit,
     viewModel: BibleViewModel = viewModel()
 ) {
     val verses by viewModel.verses.collectAsState()
@@ -50,8 +53,10 @@ fun BibleScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val navDirection by viewModel.navDirection.collectAsState()
     val highlights by viewModel.highlights.collectAsState()
+    val bookmarks by viewModel.bookmarks.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val scrollTargetVerse by viewModel.scrollTargetVerse.collectAsState()
+    val currentVersion by viewModel.currentVersion.collectAsState()
 
     val context = LocalContext.current
     val appPreferences = remember { AppPreferences(context) }
@@ -69,14 +74,36 @@ fun BibleScreen(
     
     var selectedVerseForMenu by remember { mutableStateOf<Verse?>(null) }
 
+    // Check if current page is bookmarked
+    val isPageBookmarked = remember(verses, bookmarks) {
+        verses.firstOrNull()?.let { bookmarks.contains(it.verse) } ?: false
+    }
+
     // Handle Auto-scroll to target verse
     LaunchedEffect(verses, scrollTargetVerse) {
         if (verses.isNotEmpty() && scrollTargetVerse != null) {
             val index = verses.indexOfFirst { it.verse == scrollTargetVerse }
             if (index != -1) {
-                delay(300) // Wait for layout/animation
+                delay(300)
                 listState.animateScrollToItem(index)
                 viewModel.clearScrollTarget()
+            }
+        }
+    }
+
+    // Version sync
+    LaunchedEffect(readerSettings.bibleVersion) {
+        viewModel.setVersion(readerSettings.bibleVersion)
+    }
+
+    // Scroll Connection to detect fast upward scrolls
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                if (available.y > 1000) { // Fast scroll up
+                    isSearchVisible = true
+                }
+                return super.onPostFling(consumed, available)
             }
         }
     }
@@ -103,13 +130,13 @@ fun BibleScreen(
     }
 
     LaunchedEffect(listState.isScrollInProgress) {
-        if (listState.isScrollInProgress) {
+        if (listState.isScrollInProgress && listState.firstVisibleItemScrollOffset > 0) {
             isSearchVisible = false
         }
     }
 
-    LaunchedEffect(currentBook, currentChapter) {
-        onUpdateLastRead(currentBook, "Chapter $currentChapter", "bible_view")
+    LaunchedEffect(currentBook, currentChapter, currentVersion) {
+        onUpdateLastRead(currentBook, "Chapter $currentChapter", "bible_view", currentVersion)
     }
 
     ModalNavigationDrawer(
@@ -152,13 +179,20 @@ fun BibleScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("$currentBook $currentChapter") },
+                    title = { Text("$currentBook $currentChapter ($currentVersion)") },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                         }
                     },
                     actions = {
+                        IconButton(onClick = { viewModel.togglePageBookmark() }) {
+                            Icon(
+                                imageVector = if (isPageBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                                contentDescription = "Bookmark Chapter",
+                                tint = if (isPageBookmarked) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                            )
+                        }
                         IconButton(onClick = { showSettingsSheet = true }) {
                             Icon(Icons.Default.Settings, "Reader Settings")
                         }
@@ -183,6 +217,7 @@ fun BibleScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .background(backgroundColor)
+                    .nestedScroll(nestedScrollConnection)
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures { _, dragAmount ->
                             if (dragAmount > 50) viewModel.previousChapter()
@@ -196,7 +231,7 @@ fun BibleScreen(
             ) {
                 // Page Flip / Slide Animation
                 AnimatedContent(
-                    targetState = "$currentBook-$currentChapter",
+                    targetState = "$currentBook-$currentChapter-$currentVersion",
                     transitionSpec = {
                         if (navDirection > 0) {
                             (slideInHorizontally(animationSpec = tween(300)) { it } + fadeIn())
@@ -208,7 +243,7 @@ fun BibleScreen(
                             fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
                         }
                     }
-                ) { targetState ->
+                ) { _ ->
                     if (isLoading) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
@@ -221,26 +256,37 @@ fun BibleScreen(
                         ) {
                             items(verses) { verse ->
                                 val isHighlighted = highlights.contains(verse.verse)
+                                val isBookmarked = bookmarks.contains(verse.verse)
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp)
-                                        .clip(RoundedCornerShape(12.dp)) // Curve the corners
+                                        .clip(RoundedCornerShape(12.dp))
                                         .background(if (isHighlighted) Color.Yellow.copy(alpha = 0.3f) else Color.Transparent)
                                         .combinedClickable(
                                             onClick = { selectedVerseForMenu = verse },
                                             onLongClick = { selectedVerseForMenu = verse }
                                         )
-                                        .padding(8.dp)
+                                        .padding(8.dp),
+                                    verticalAlignment = Alignment.Top
                                 ) {
-                                    Text(
-                                        text = verse.verse.toString(),
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        modifier = Modifier.width(28.dp)
-                                    )
+                                    Column(modifier = Modifier.width(28.dp)) {
+                                        Text(
+                                            text = verse.verse.toString(),
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        )
+                                        if (isBookmarked) {
+                                            Icon(
+                                                Icons.Default.Bookmark,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(12.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
                                     Text(
                                         text = verse.text,
                                         style = MaterialTheme.typography.bodyLarge.copy(
@@ -248,7 +294,8 @@ fun BibleScreen(
                                             fontFamily = selectedFontFamily,
                                             lineHeight = (readerSettings.fontSize * readerSettings.lineSpacing).sp,
                                             color = contentColor
-                                        )
+                                        ),
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
@@ -259,14 +306,11 @@ fun BibleScreen(
         }
     }
 
-    // Verse Context Menu - ModalBottomSheet
     if (selectedVerseForMenu != null) {
         val verse = selectedVerseForMenu!!
         ModalBottomSheet(
             onDismissRequest = { selectedVerseForMenu = null },
-            dragHandle = { BottomSheetDefaults.DragHandle() },
-            containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 8.dp
+            dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
             Column(
                 modifier = Modifier
@@ -289,7 +333,7 @@ fun BibleScreen(
                             headlineContent = { Text(if (highlights.contains(verse.verse)) "Remove Highlight" else "Highlight Verse", fontWeight = FontWeight.SemiBold) },
                             leadingContent = { 
                                 Icon(
-                                    imageVector = if (highlights.contains(verse.verse)) Icons.Default.HighlightOff else Icons.Default.Highlight,
+                                    imageVector = if (highlights.contains(verse.verse)) Icons.Default.HighlightOff else Icons.Default.Highlight, 
                                     contentDescription = null,
                                     tint = if (highlights.contains(verse.verse)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                                 ) 
@@ -302,6 +346,24 @@ fun BibleScreen(
                         )
                         
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+
+                        ListItem(
+                            headlineContent = { Text(if (bookmarks.contains(verse.verse)) "Remove Bookmark" else "Bookmark Verse", fontWeight = FontWeight.SemiBold) },
+                            leadingContent = { 
+                                Icon(
+                                    imageVector = if (bookmarks.contains(verse.verse)) Icons.Default.BookmarkRemove else Icons.Default.BookmarkAdd, 
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                ) 
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                viewModel.toggleBookmark(verse)
+                                selectedVerseForMenu = null
+                            }
+                        )
+
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
                         
                         ListItem(
                             headlineContent = { Text("Share Verse", fontWeight = FontWeight.SemiBold) },
@@ -310,7 +372,7 @@ fun BibleScreen(
                             modifier = Modifier.clickable {
                                 val sendIntent: Intent = Intent().apply {
                                     action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, "${verse.book} ${verse.chapter}:${verse.verse} - ${verse.text}")
+                                    putExtra(Intent.EXTRA_TEXT, "${verse.book} ${verse.chapter}:${verse.verse} (${currentVersion}) - ${verse.text}")
                                     type = "text/plain"
                                 }
                                 val shareIntent = Intent.createChooser(sendIntent, null)
@@ -324,7 +386,6 @@ fun BibleScreen(
         }
     }
 
-    // Bottom Search UI
     if (showSearchSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSearchSheet = false },
@@ -400,6 +461,22 @@ fun BibleScreen(
                 Text("Reader Settings", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(16.dp))
                 
+                Text("Bible Version")
+                Row {
+                    listOf("KJV", "ASV", "AKJV").forEach { version ->
+                        FilterChip(
+                            selected = readerSettings.bibleVersion == version,
+                            onClick = { 
+                                scope.launch { appPreferences.saveReaderSettings(readerSettings.copy(bibleVersion = version)) } 
+                            },
+                            label = { Text(version) },
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
                 Text("Font Size: ${readerSettings.fontSize.toInt()}")
                 Slider(
                     value = readerSettings.fontSize,

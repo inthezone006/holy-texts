@@ -25,7 +25,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rahul.holytexts.data.AppPreferences
 import com.rahul.holytexts.data.LastReadInfo
+import com.rahul.holytexts.data.ReaderSettings
 import com.rahul.holytexts.ui.theme.HolyTextsTheme
+import com.rahul.holytexts.util.LocaleHelper
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String, val label: String, val selectedIcon: ImageVector, val unselectedIcon: ImageVector) {
@@ -43,14 +45,19 @@ sealed class AccountNav(val route: String) {
     }
     object ProfileSettings : AccountNav("profile_settings")
     object ChangePassword : AccountNav("change_password")
+    object Bookmarks : AccountNav("bookmarks")
     object Settings : AccountNav("settings")
 }
 
 sealed class BibleNav(val route: String) {
-    object BibleView : BibleNav("bible_view?book={book}&chapter={chapter}") {
-        fun createRoute(book: String?, chapter: String?) = 
-            "bible_view?book=${Uri.encode(book ?: "Genesis")}&chapter=${Uri.encode(chapter ?: "1")}"
+    object BibleView : BibleNav("bible_view?book={book}&chapter={chapter}&version={version}&verse={verse}") {
+        fun createRoute(book: String?, chapter: String?, version: String? = "KJV", verse: Int? = null) = 
+            "bible_view?book=${Uri.encode(book ?: "Genesis")}&chapter=${Uri.encode(chapter ?: "1")}&version=${Uri.encode(version ?: "KJV")}&verse=${verse ?: -1}"
     }
+}
+
+sealed class FeatureNav(val route: String) {
+    object DailyVerse : FeatureNav("daily_verse")
 }
 
 @Composable
@@ -62,8 +69,18 @@ fun MainScreen() {
     
     val savedDarkMode by appPreferences.isDarkMode.collectAsState(initial = null)
     val lastReadInfo by appPreferences.lastReadInfo.collectAsState(initial = null)
+    val readerSettings by appPreferences.readerSettings.collectAsState(initial = ReaderSettings())
+    val appSettings by appPreferences.appSettings.collectAsState(initial = null)
+    
     val systemDarkMode = isSystemInDarkTheme()
     val isDarkMode = savedDarkMode ?: systemDarkMode
+    
+    // Apply locale globally
+    LaunchedEffect(appSettings?.appLanguage) {
+        appSettings?.appLanguage?.let {
+            LocaleHelper.applyLocale(context, it)
+        }
+    }
     
     val items = listOf(
         Screen.Home,
@@ -81,7 +98,8 @@ fun MainScreen() {
                     items.forEach { screen ->
                         val isSelected = currentDestination?.hierarchy?.any { 
                             it.route == screen.route || 
-                            (screen == Screen.Home && it.route?.startsWith("bible_view") == true)
+                            (screen == Screen.Home && it.route?.startsWith("bible_view") == true) ||
+                            (screen == Screen.Home && it.route == FeatureNav.DailyVerse.route)
                         } == true
                         
                         NavigationBarItem(
@@ -94,7 +112,7 @@ fun MainScreen() {
                             label = { Text(screen.label) },
                             selected = isSelected,
                             onClick = {
-                                if (screen == Screen.Home && currentDestination?.route?.startsWith("bible_view") == true) {
+                                if (screen == Screen.Home && (currentDestination?.route?.startsWith("bible_view") == true || currentDestination?.route == FeatureNav.DailyVerse.route)) {
                                     navController.popBackStack(Screen.Home.route, false)
                                 } else {
                                     navController.navigate(screen.route) {
@@ -119,6 +137,12 @@ fun MainScreen() {
                             navController.navigate(route) {
                                 launchSingleTop = true
                             }
+                        },
+                        onNavigateToBookmarks = {
+                            navController.navigate(AccountNav.Bookmarks.route)
+                        },
+                        onNavigateToDailyVerse = {
+                            navController.navigate(FeatureNav.DailyVerse.route)
                         }
                     ) 
                 }
@@ -126,7 +150,7 @@ fun MainScreen() {
                 composable(Screen.Library.route) { 
                     LibraryScreen(
                         onNavigateToBible = { 
-                            navController.navigate(BibleNav.BibleView.createRoute("Genesis", "1")) 
+                            navController.navigate(BibleNav.BibleView.createRoute("Genesis", "1", readerSettings.bibleVersion)) 
                         }
                     ) 
                 }
@@ -135,18 +159,23 @@ fun MainScreen() {
                     route = BibleNav.BibleView.route,
                     arguments = listOf(
                         navArgument("book") { defaultValue = "Genesis" },
-                        navArgument("chapter") { defaultValue = "1" }
+                        navArgument("chapter") { defaultValue = "1" },
+                        navArgument("version") { defaultValue = "KJV" },
+                        navArgument("verse") { type = NavType.IntType; defaultValue = -1 }
                     )
                 ) {
                     BibleScreen(
                         onBackClick = { navController.popBackStack() },
-                        onUpdateLastRead = { book, chapter, _ ->
+                        onUpdateLastRead = { book, chapter, route, version ->
                             scope.launch {
-                                val route = BibleNav.BibleView.createRoute(book, chapter.split(" ").last())
-                                appPreferences.saveLastRead(LastReadInfo(book, chapter, route))
+                                appPreferences.saveLastRead(LastReadInfo(book, chapter, route, version))
                             }
                         }
                     )
+                }
+
+                composable(FeatureNav.DailyVerse.route) {
+                    DailyVerseScreen(onBackClick = { navController.popBackStack() })
                 }
                 
                 composable(Screen.AccountTab.route) {
@@ -226,6 +255,15 @@ fun MainScreen() {
                     ChangePasswordScreen(
                         onBackClick = { navController.popBackStack() },
                         onSuccess = { navController.popBackStack() }
+                    )
+                }
+
+                composable(AccountNav.Bookmarks.route) {
+                    BookmarksScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onBookmarkClick = { book, chapter, version, verse ->
+                            navController.navigate(BibleNav.BibleView.createRoute(book, chapter.toString(), version, verse))
+                        }
                     )
                 }
                 

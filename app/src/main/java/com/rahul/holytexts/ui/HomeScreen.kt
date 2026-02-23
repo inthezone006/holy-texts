@@ -26,7 +26,9 @@ import com.rahul.holytexts.data.LastReadInfo
 @Composable
 fun HomeScreen(
     lastReadInfo: LastReadInfo?,
-    onContinueReading: (String) -> Unit
+    onContinueReading: (String) -> Unit,
+    onNavigateToBookmarks: () -> Unit,
+    onNavigateToDailyVerse: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -72,7 +74,9 @@ fun HomeScreen(
                         icon = Icons.Default.Star,
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.height(200.dp)
+                        modifier = Modifier
+                            .height(200.dp)
+                            .clickable { onNavigateToDailyVerse() }
                     )
                 }
                 item {
@@ -91,7 +95,9 @@ fun HomeScreen(
                             icon = Icons.Default.Bookmark,
                             containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.height(94.dp)
+                            modifier = Modifier
+                                .height(94.dp)
+                                .clickable { onNavigateToBookmarks() }
                         )
                     }
                 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,15 @@ import java.io.InputStreamReader
 
 data class Verse(val book: String, val chapter: Int, val verse: Int, val text: String)
 data class BibleBook(val name: String, val chapters: Int)
+data class Bookmark(
+    val id: String,
+    val book: String,
+    val chapter: Int,
+    val verse: Int,
+    val version: String,
+    val text: String,
+    val timestamp: Long
+)
 
 class BibleViewModel(
     application: Application,
@@ -40,7 +50,13 @@ class BibleViewModel(
     private val _highlights = MutableStateFlow<Set<Int>>(emptySet())
     val highlights: StateFlow<Set<Int>> = _highlights
 
-    private val _navDirection = MutableStateFlow(0)
+    private val _bookmarks = MutableStateFlow<Set<Int>>(emptySet())
+    val bookmarks: StateFlow<Set<Int>> = _bookmarks
+
+    private val _allBookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
+    val allBookmarks: StateFlow<List<Bookmark>> = _allBookmarks
+
+    private val _navDirection = MutableStateFlow(0) // 1 for next, -1 for previous, 0 for jump
     val navDirection: StateFlow<Int> = _navDirection
 
     private val _searchResults = MutableStateFlow<List<Verse>>(emptyList())
@@ -49,31 +65,47 @@ class BibleViewModel(
     private val _scrollTargetVerse = MutableStateFlow<Int?>(null)
     val scrollTargetVerse: StateFlow<Int?> = _scrollTargetVerse
 
-    private val _allVerses = mutableListOf<Verse>()
+    private val _currentVersion = MutableStateFlow("KJV")
+    val currentVersion: StateFlow<String> = _currentVersion
+
+    private var _allVerses = mutableListOf<Verse>()
     
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
     init {
         viewModelScope.launch {
-            loadBibleData()
+            loadBibleData(_currentVersion.value)
+            
+            // Check navigation arguments from savedStateHandle
             val bookArg = savedStateHandle.get<String>("book")
             val chapterArg = savedStateHandle.get<String>("chapter")?.toIntOrNull()
+            val version = savedStateHandle.get<String>("version") ?: "KJV"
             
+            _currentVersion.value = version
             if (bookArg != null && chapterArg != null) {
                 loadChapter(bookArg, chapterArg, 0)
             } else {
                 loadChapter("Genesis", 1, 0)
             }
+            fetchAllBookmarks()
         }
     }
 
-    private suspend fun loadBibleData() {
+    private suspend fun loadBibleData(version: String) {
+        _isLoading.value = true
         withContext(Dispatchers.IO) {
             try {
-                val inputStream = getApplication<Application>().assets.open("bible.txt")
+                val fileName = when(version) {
+                    "ASV" -> "bible_asv.txt"
+                    "AKJV" -> "bible_akjv.txt"
+                    else -> "bible_kjv.txt"
+                }
+                
+                val inputStream = getApplication<Application>().assets.open(fileName)
                 val reader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
                 val bookChapterMap = LinkedHashMap<String, Int>()
+                val newAllVerses = mutableListOf<Verse>()
                 
                 reader.forEachLine { line ->
                     val match = Regex("""^(.+?)\s+(\d+):(\d+)\t+(.*)$""").find(line)
@@ -84,7 +116,7 @@ class BibleViewModel(
                         val text = match.groupValues[4]
                         
                         val verse = Verse(bookName, chapterNum, verseNum, text)
-                        _allVerses.add(verse)
+                        newAllVerses.add(verse)
 
                         val currentMax = bookChapterMap.getOrDefault(bookName, 0)
                         if (chapterNum > currentMax) {
@@ -92,10 +124,22 @@ class BibleViewModel(
                         }
                     }
                 }
+                _allVerses = newAllVerses
                 _books.value = bookChapterMap.map { (name, chapters) -> BibleBook(name, chapters) }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+        _isLoading.value = false
+    }
+
+    fun setVersion(version: String) {
+        if (_currentVersion.value == version) return
+        _currentVersion.value = version
+        savedStateHandle["version"] = version
+        viewModelScope.launch {
+            loadBibleData(version)
+            loadChapter(_currentBook.value, _currentChapter.value, 0)
         }
     }
 
@@ -106,15 +150,44 @@ class BibleViewModel(
         _scrollTargetVerse.value = targetVerse
         _isLoading.value = true
         
+        // Update savedStateHandle so it's preserved
         savedStateHandle["book"] = bookName
         savedStateHandle["chapter"] = chapter.toString()
 
         viewModelScope.launch {
             loadHighlights(bookName, chapter)
+            loadBookmarksForChapter(bookName, chapter)
             _verses.value = _allVerses.filter { 
                 it.book.equals(bookName, ignoreCase = true) && it.chapter == chapter 
             }
             _isLoading.value = false
+        }
+    }
+
+    fun fetchAllBookmarks() {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val snapshot = db.collection("users").document(user.uid)
+                    .collection("bookmarks")
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+                
+                _allBookmarks.value = snapshot.documents.map { doc ->
+                    Bookmark(
+                        id = doc.id,
+                        book = doc.getString("book") ?: "",
+                        chapter = doc.getLong("chapter")?.toInt() ?: 0,
+                        verse = doc.getLong("verse")?.toInt() ?: 0,
+                        version = doc.getString("version") ?: "",
+                        text = doc.getString("text") ?: "",
+                        timestamp = doc.getLong("timestamp") ?: 0L
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -143,6 +216,7 @@ class BibleViewModel(
         try {
             val snapshot = db.collection("users").document(user.uid)
                 .collection("highlights")
+                .whereEqualTo("version", _currentVersion.value)
                 .whereEqualTo("book", book)
                 .whereEqualTo("chapter", chapter)
                 .get()
@@ -159,11 +233,12 @@ class BibleViewModel(
         val user = auth.currentUser ?: return
         val book = _currentBook.value
         val chapter = _currentChapter.value
+        val version = _currentVersion.value
         val isHighlighted = _highlights.value.contains(verse)
 
         viewModelScope.launch {
             try {
-                val docId = "${book}_${chapter}_${verse}"
+                val docId = "highlight_${version}_${book}_${chapter}_${verse}"
                 if (isHighlighted) {
                     db.collection("users").document(user.uid)
                         .collection("highlights").document(docId)
@@ -171,6 +246,7 @@ class BibleViewModel(
                     _highlights.value = _highlights.value - verse
                 } else {
                     val highlight = hashMapOf(
+                        "version" to version,
                         "book" to book,
                         "chapter" to chapter,
                         "verse" to verse
@@ -183,6 +259,66 @@ class BibleViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    private suspend fun loadBookmarksForChapter(book: String, chapter: Int) {
+        val user = auth.currentUser ?: return
+        try {
+            val snapshot = db.collection("users").document(user.uid)
+                .collection("bookmarks")
+                .whereEqualTo("version", _currentVersion.value)
+                .whereEqualTo("book", book)
+                .whereEqualTo("chapter", chapter)
+                .get()
+                .await()
+            
+            val bookmarkSet = snapshot.documents.mapNotNull { it.getLong("verse")?.toInt() }.toSet()
+            _bookmarks.value = bookmarkSet
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun toggleBookmark(verse: Verse) {
+        val user = auth.currentUser ?: return
+        val version = _currentVersion.value
+        val isBookmarked = _bookmarks.value.contains(verse.verse)
+
+        viewModelScope.launch {
+            try {
+                val docId = "bookmark_${version}_${verse.book}_${verse.chapter}_${verse.verse}"
+                if (isBookmarked) {
+                    db.collection("users").document(user.uid)
+                        .collection("bookmarks").document(docId)
+                        .delete().await()
+                    _bookmarks.value = _bookmarks.value - verse.verse
+                } else {
+                    val bookmark = hashMapOf(
+                        "version" to version,
+                        "book" to verse.book,
+                        "chapter" to verse.chapter,
+                        "verse" to verse.verse,
+                        "text" to verse.text,
+                        "timestamp" to System.currentTimeMillis()
+                    )
+                    db.collection("users").document(user.uid)
+                        .collection("bookmarks").document(docId)
+                        .set(bookmark).await()
+                    _bookmarks.value = _bookmarks.value + verse.verse
+                }
+                fetchAllBookmarks() // Refresh list for BookmarksScreen
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun togglePageBookmark() {
+        val currentVerses = _verses.value
+        if (currentVerses.isNotEmpty()) {
+            // Bookmark the first verse of the chapter to represent the "page"
+            toggleBookmark(currentVerses.first())
         }
     }
 
